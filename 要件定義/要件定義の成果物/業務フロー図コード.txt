@@ -1,0 +1,116 @@
+flowchart TD
+    Start([開始])
+    LoginScreen[ログイン画面表示]
+
+    SelectLoginMenu{操作を選択}
+    Register[新規ユーザー登録]
+    Login[ログイン]
+    LoginExitConfirm{アプリケーションを終了しますか？}
+
+    ExitMessage[アプリケーション終了表示]
+    End([終了])
+
+    RegisterInput[ユーザー名・パスワード入力]
+    RegisterValidate{入力内容は有効か}
+    RegisterError[登録エラー表示]
+    RegisterComplete[登録完了表示]
+
+    LoginInput[ユーザー名・パスワード入力]
+    LoginCheck{ログイン情報は正しいか}
+    LoginError[ログインエラー表示]
+    RoleCheck{roleはどちらか}
+
+    UserMenu[ユーザー用メニュー画面表示]
+    AdminMenu[管理者用メニュー画面表示]
+
+    UserSelect{ユーザー操作を選択}
+    AnswerQuestion[問題に解答する]
+    CheckHistory[解答履歴を確認する]
+    CheckWrongHistory[誤答履歴を確認する]
+    RetryWrongQuestion[誤答問題を再出題する]
+    DeleteHistory[履歴を削除する]
+    UpdateUserInfo[ユーザー情報更新]
+    UserLogout[ログアウト]
+    UserExitConfirm{アプリケーションを終了しますか？}
+
+    AdminSelect{管理者操作を選択}
+    ShowQuestionList[問題一覧を表示する]
+    AddQuestion[問題を追加する]
+    UpdateQuestion[問題を更新する]
+    DeleteQuestion[問題を削除する]
+    ManageCategory[カテゴリを管理する]
+    AdminLogout[ログアウト]
+    AdminExitConfirm{アプリケーションを終了しますか？}
+
+    LogoutComplete[ログアウト完了表示]
+
+    Start --> LoginScreen
+    LoginScreen --> SelectLoginMenu
+
+    SelectLoginMenu -->|新規登録| Register
+    SelectLoginMenu -->|ログイン| Login
+    SelectLoginMenu -->|アプリケーション終了| LoginExitConfirm
+
+    LoginExitConfirm -->|終了する| ExitMessage
+    LoginExitConfirm -->|キャンセル| LoginScreen
+
+    Register --> RegisterInput
+    RegisterInput --> RegisterValidate
+    RegisterValidate -->|有効| RegisterComplete
+    RegisterValidate -->|無効| RegisterError
+    RegisterError --> RegisterInput
+    RegisterComplete --> LoginScreen
+
+    Login --> LoginInput
+    LoginInput --> LoginCheck
+    LoginCheck -->|正しい| RoleCheck
+    LoginCheck -->|正しくない| LoginError
+    LoginError --> LoginScreen
+
+    RoleCheck -->|USER| UserMenu
+    RoleCheck -->|ADMIN| AdminMenu
+
+    UserMenu --> UserSelect
+    UserSelect -->|問題に解答する| AnswerQuestion
+    UserSelect -->|解答履歴を確認する| CheckHistory
+    UserSelect -->|誤答履歴を確認する| CheckWrongHistory
+    UserSelect -->|誤答問題を再出題する| RetryWrongQuestion
+    UserSelect -->|履歴を削除する| DeleteHistory
+    UserSelect -->|ユーザー情報更新| UpdateUserInfo
+    UserSelect -->|ログアウト| UserLogout
+    UserSelect -->|アプリケーション終了| UserExitConfirm
+
+    AnswerQuestion --> UserMenu
+    CheckHistory --> UserMenu
+    CheckWrongHistory --> UserMenu
+    RetryWrongQuestion --> UserMenu
+    DeleteHistory --> UserMenu
+    UpdateUserInfo --> UserMenu
+
+    UserLogout --> LogoutComplete
+    LogoutComplete --> LoginScreen
+
+    UserExitConfirm -->|終了する| ExitMessage
+    UserExitConfirm -->|キャンセル| UserMenu
+
+    AdminMenu --> AdminSelect
+    AdminSelect -->|問題一覧を表示する| ShowQuestionList
+    AdminSelect -->|問題を追加する| AddQuestion
+    AdminSelect -->|問題を更新する| UpdateQuestion
+    AdminSelect -->|問題を削除する| DeleteQuestion
+    AdminSelect -->|カテゴリを管理する| ManageCategory
+    AdminSelect -->|ログアウト| AdminLogout
+    AdminSelect -->|アプリケーション終了| AdminExitConfirm
+
+    ShowQuestionList --> AdminMenu
+    AddQuestion --> AdminMenu
+    UpdateQuestion --> AdminMenu
+    DeleteQuestion --> AdminMenu
+    ManageCategory --> AdminMenu
+
+    AdminLogout --> LogoutComplete
+
+    AdminExitConfirm -->|終了する| ExitMessage
+    AdminExitConfirm -->|キャンセル| AdminMenu
+
+    ExitMessage --> End

@@ -1,0 +1,58 @@
+graph LR
+    Guest((未登録ユーザー))
+    User((ユーザー))
+    Admin((管理者))
+
+    subgraph System["基本情報技術者対策アプリケーション"]
+
+        subgraph Common["共通機能"]
+            UC1(新規ユーザー登録)
+            UC3(ログイン)
+            UC4(ログアウト)
+            UC15(ホームへ戻る)
+            UC16(アプリケーション終了)
+        end
+
+        subgraph UserFunctions["ユーザー機能"]
+            UC2(ユーザー情報更新)
+            UC5(問題に解答)
+            UC6(解答履歴を確認)
+            UC7(誤答履歴を確認)
+            UC8(誤答問題を再出題)
+            UC9(履歴を削除)
+        end
+
+        subgraph AdminFunctions["管理者機能"]
+            UC10(問題一覧を表示)
+            UC11(問題を追加)
+            UC12(問題を更新)
+            UC13(問題を削除)
+            UC14(カテゴリを管理)
+        end
+    end
+
+    Guest --- UC1
+    Guest --- UC3
+    Guest --- UC16
+
+    User --- UC2
+    User --- UC3
+    User --- UC4
+    User --- UC5
+    User --- UC6
+    User --- UC7
+    User --- UC8
+    User --- UC9
+    User --- UC15
+    User --- UC16
+
+    Admin --- UC3
+    Admin --- UC4
+    Admin --- UC10
+    Admin --- UC11
+    Admin --- UC12
+    Admin --- UC13
+    Admin --- UC14
+    Admin --- UC15
+    Admin --- UC16
+  

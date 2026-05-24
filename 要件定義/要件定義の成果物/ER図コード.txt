@@ -1,0 +1,41 @@
+erDiagram
+    users {
+        int id PK
+        varchar username
+        varchar password
+        varchar role
+    }
+
+    categories {
+        int id PK
+        varchar name
+        int parent_id FK
+    }
+
+    questions {
+        int id PK
+        int category_id FK
+        text question_text
+        text explanation
+    }
+
+    choices {
+        int id PK
+        int question_id FK
+        text choice_text
+        boolean is_correct
+    }
+
+    answer_histories {
+        int id PK
+        int user_id FK
+        int question_id FK
+        int selected_choice_id FK
+        boolean is_correct
+    }
+
+    users ||--o{ answer_histories : "解答"
+    categories ||--o{ questions : "分類"
+    questions ||--o{ choices : "持つ"
+    questions ||--o{ answer_histories : "記録"
+    choices ||--o{ answer_histories : "選択"
