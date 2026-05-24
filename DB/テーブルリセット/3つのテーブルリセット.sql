@@ -1,0 +1,1 @@
+TRUNCATE TABLE choices, questions, categories RESTART IDENTITY CASCADE;
