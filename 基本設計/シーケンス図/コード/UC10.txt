@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as AdminQuestionController
+    participant UseCase as ShowQuestionListUseCase
+    participant Service as ShowQuestionListService
+    participant QuestionRepo as QuestionRepository
+    participant DB as Database
+
+    Admin->>Controller: 問題一覧表示を選択する
+    Controller->>UseCase: execute()
+    UseCase->>Service: execute()
+
+    Service->>QuestionRepo: findAll()
+    QuestionRepo->>DB: SELECT * FROM questions
+    DB-->>QuestionRepo: 問題一覧
+    QuestionRepo-->>Service: List<Question>
+
+    alt 問題が存在しない
+        Service-->>Controller: ShowQuestionListResult(false, "問題が登録されていません")
+        Controller->>View: showMessage(message)
+        View-->>Admin: 問題未登録メッセージを表示する
+        Controller->>View: showAdminMenu()
+    else 問題が存在する
+        Service-->>Controller: ShowQuestionListResult(true, questions)
+        Controller->>View: showQuestions(questions)
+        View-->>Admin: 問題一覧を表示する
+        Controller->>View: showAdminMenu()
+    end

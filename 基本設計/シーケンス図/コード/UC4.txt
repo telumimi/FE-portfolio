@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User as 利用者
+    participant View as ConsoleView
+    participant Controller as AuthController
+    participant UseCase as LogoutUseCase
+    participant Service as LogoutService
+    participant Session as LoginSession
+
+    User->>Controller: ログアウトを選択する
+    Controller->>View: confirmLogout()
+    View-->>User: ログアウト確認を表示する
+    User->>View: ログアウトするか選択する
+    View-->>Controller: true / false
+
+    alt キャンセル
+        Controller->>View: showCurrentMenu()
+        View-->>User: 現在のメニュー画面を表示する
+    else ログアウトする
+        Controller->>UseCase: execute()
+        UseCase->>Service: execute()
+        Service->>Session: logout()
+        Session-->>Service: ログイン状態を解除
+        Service-->>Controller: LogoutResult(true, "ログアウトしました")
+
+        Controller->>View: showMessage(message)
+        View-->>User: ログアウト完了メッセージを表示する
+        Controller->>View: showLoginMenu()
+        View-->>User: ログイン画面を表示する
+    end

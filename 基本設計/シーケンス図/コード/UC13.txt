@@ -1,0 +1,66 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as AdminQuestionController
+    participant UseCase as DeleteQuestionUseCase
+    participant Service as DeleteQuestionService
+    participant QuestionRepo as QuestionRepository
+    participant ChoiceRepo as ChoiceRepository
+    participant DB as Database
+
+    Admin->>Controller: 問題削除を選択する
+
+    Controller->>QuestionRepo: findAll()
+    QuestionRepo->>DB: SELECT * FROM questions
+    DB-->>QuestionRepo: 問題一覧
+    QuestionRepo-->>Controller: List<Question>
+
+    alt 問題が存在しない
+        Controller->>View: showMessage("問題が登録されていません")
+        View-->>Admin: 問題未登録メッセージを表示する
+        Controller->>View: showAdminMenu()
+    else 問題が存在する
+        Controller->>View: showQuestions(questions)
+        View-->>Admin: 問題一覧を表示する
+        Admin->>View: 削除対象の問題を選択する
+        View-->>Controller: questionId
+
+        Controller->>View: confirmDelete()
+        View-->>Admin: 削除確認を表示する
+        Admin->>View: 削除するか選択する
+        View-->>Controller: true / false
+
+        alt キャンセル
+            Controller->>View: showAdminMenu()
+            View-->>Admin: 管理者用メニューを表示する
+        else 削除する
+            Controller->>UseCase: execute(command)
+            UseCase->>Service: execute(command)
+
+            Service->>QuestionRepo: existsById(questionId)
+            QuestionRepo->>DB: SELECT COUNT(*) FROM questions WHERE id = ?
+            DB-->>QuestionRepo: 件数
+            QuestionRepo-->>Service: true / false
+
+            alt 問題が存在しない
+                Service-->>Controller: DeleteQuestionResult(false, "問題が存在しません")
+                Controller->>View: showError(message)
+                View-->>Admin: エラーメッセージを表示する
+            else 問題が存在する
+                Service->>ChoiceRepo: deleteByQuestionId(questionId)
+                ChoiceRepo->>DB: DELETE FROM choices WHERE question_id = ?
+                DB-->>ChoiceRepo: 削除結果
+                ChoiceRepo-->>Service: 削除完了
+
+                Service->>QuestionRepo: deleteById(questionId)
+                QuestionRepo->>DB: DELETE FROM questions WHERE id = ?
+                DB-->>QuestionRepo: 削除結果
+                QuestionRepo-->>Service: 削除完了
+
+                Service-->>Controller: DeleteQuestionResult(true, "問題を削除しました")
+                Controller->>View: showMessage(message)
+                View-->>Admin: 削除完了メッセージを表示する
+                Controller->>View: showAdminMenu()
+            end
+        end
+    end

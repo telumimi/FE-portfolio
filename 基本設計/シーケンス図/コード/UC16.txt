@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor User as 利用者
+    participant View as ConsoleView
+    participant Controller as ApplicationController
+    participant UseCase as ExitApplicationUseCase
+    participant Service as ExitApplicationService
+    participant Session as LoginSession
+    participant Runner as ApplicationRunner
+
+    User->>Controller: アプリケーション終了を選択する
+    Controller->>View: confirmExit()
+    View-->>User: 終了確認を表示する
+    User->>View: 終了するか選択する
+    View-->>Controller: true / false
+
+    alt キャンセル
+        Controller->>View: showCurrentMenu()
+        View-->>User: 元の画面を表示する
+    else 終了する
+        Controller->>UseCase: execute()
+        UseCase->>Service: execute()
+
+        Service->>Session: isLoggedIn()
+        Session-->>Service: true / false
+
+        opt ログイン中の場合
+            Service->>Session: logout()
+            Session-->>Service: ログイン状態を解除
+        end
+
+        Service-->>Controller: ExitApplicationResult(true, "アプリケーションを終了します")
+        Controller->>View: showExitMessage()
+        View-->>User: アプリケーション終了メッセージを表示する
+
+        Controller->>Runner: stop()
+        Runner-->>Controller: 実行状態を終了にする
+    end

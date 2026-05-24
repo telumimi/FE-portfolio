@@ -1,0 +1,64 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as CategoryController
+    participant UseCase as ManageCategoryUseCase
+    participant Service as ManageCategoryService
+    participant CategoryRepo as CategoryRepository
+    participant DB as Database
+
+    Admin->>Controller: カテゴリ更新を選択する
+
+    Controller->>CategoryRepo: findAll()
+    CategoryRepo->>DB: SELECT * FROM categories
+    DB-->>CategoryRepo: カテゴリ一覧
+    CategoryRepo-->>Controller: List<Category>
+
+    alt カテゴリが存在しない
+        Controller->>View: showMessage("カテゴリが登録されていません")
+        View-->>Admin: カテゴリ未登録メッセージを表示する
+        Controller->>View: showCategoryMenu()
+    else カテゴリが存在する
+        Controller->>View: showCategories(categories)
+        View-->>Admin: カテゴリ一覧を表示する
+        Admin->>View: 更新対象カテゴリを選択する
+        View-->>Controller: categoryId
+
+        Controller->>View: showUpdateCategoryForm()
+        View-->>Admin: 新しいカテゴリ情報の入力を求める
+        Admin->>View: 新しいカテゴリ情報を入力する
+        View-->>Controller: UpdateCategoryCommand
+
+        Controller->>UseCase: update(command)
+        UseCase->>Service: update(command)
+
+        Service->>Service: 入力内容を検証する
+
+        alt 入力内容が不正
+            Service-->>Controller: CategoryResult(false, "入力内容が不正です")
+            Controller->>View: showError(message)
+            View-->>Admin: エラー表示・再入力を求める
+        else 入力内容が有効
+            Service->>CategoryRepo: existsById(categoryId)
+            CategoryRepo->>DB: SELECT COUNT(*) FROM categories WHERE id = ?
+            DB-->>CategoryRepo: 件数
+            CategoryRepo-->>Service: true / false
+
+            alt 更新対象カテゴリが存在しない
+                Service-->>Controller: CategoryResult(false, "カテゴリが存在しません")
+                Controller->>View: showError(message)
+                View-->>Admin: エラーメッセージを表示する
+            else 更新可能
+                Service->>Service: Categoryを更新する
+                Service->>CategoryRepo: update(category)
+                CategoryRepo->>DB: UPDATE categories SET ...
+                DB-->>CategoryRepo: 更新結果
+                CategoryRepo-->>Service: 更新完了
+
+                Service-->>Controller: CategoryResult(true, "カテゴリを更新しました")
+                Controller->>View: showMessage(message)
+                View-->>Admin: 更新完了メッセージを表示する
+                Controller->>View: showCategoryMenu()
+            end
+        end
+    end

@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as HistoryController
+    participant UseCase as ShowAnswerHistoryUseCase
+    participant Service as ShowAnswerHistoryService
+    participant HistoryRepo as AnswerHistoryRepository
+    participant DB as Database
+
+    User->>Controller: 解答履歴確認を選択する
+    Controller->>UseCase: execute(command)
+    UseCase->>Service: execute(command)
+
+    Service->>HistoryRepo: findByUserId(userId)
+    HistoryRepo->>DB: SELECT * FROM answer_histories WHERE user_id = ?
+    DB-->>HistoryRepo: 解答履歴一覧
+    HistoryRepo-->>Service: List<AnswerHistory>
+
+    alt 解答履歴が存在しない
+        Service-->>Controller: ShowAnswerHistoryResult(false, "解答履歴はありません")
+        Controller->>View: showMessage(message)
+        View-->>User: 解答履歴なしメッセージを表示する
+        Controller->>View: showUserMenu()
+    else 解答履歴が存在する
+        Service-->>Controller: ShowAnswerHistoryResult(true, histories)
+        Controller->>View: showAnswerHistories(histories)
+        View-->>User: 解答履歴一覧を表示する
+        Controller->>View: showUserMenu()
+    end

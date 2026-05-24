@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor User as 利用者
+    participant View as ConsoleView
+    participant Controller as UserController
+    participant UseCase as ReturnHomeUseCase
+    participant Service as ReturnHomeService
+    participant Session as LoginSession
+
+    User->>Controller: ホームへ戻る操作をする
+    Controller->>UseCase: execute()
+    UseCase->>Service: execute()
+
+    Service->>Session: getRole()
+    Session-->>Service: role
+
+    Service-->>Controller: ReturnHomeResult(true, role)
+
+    alt roleがUSER
+        Controller->>View: showUserMenu()
+        View-->>User: ユーザー用メニューを表示する
+    else roleがADMIN
+        Controller->>View: showAdminMenu()
+        View-->>User: 管理者用メニューを表示する
+    end

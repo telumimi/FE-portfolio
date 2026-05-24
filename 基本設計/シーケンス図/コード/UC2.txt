@@ -1,0 +1,67 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as UserController
+    participant UseCase as UpdateUserUseCase
+    participant Service as UpdateUserService
+    participant UserRepo as UserRepository
+    participant Encoder as PasswordEncoder
+    participant DB as Database
+
+    User->>Controller: ユーザー情報更新を選択する
+    Controller->>View: showUpdateUserForm()
+    View-->>User: 更新項目と新しい情報の入力を求める
+    User->>View: 新しいユーザー情報を入力する
+    View-->>Controller: UpdateUserCommand
+
+    Controller->>UseCase: execute(command)
+    UseCase->>Service: execute(command)
+
+    Service->>UserRepo: findById(userId)
+    UserRepo->>DB: SELECT * FROM users WHERE id = ?
+    DB-->>UserRepo: ユーザー情報
+    UserRepo-->>Service: User
+
+    alt ユーザー情報を取得できない
+        Service-->>Controller: UpdateUserResult(false, "ユーザー情報を取得できません")
+        Controller->>View: showError(message)
+        View-->>User: エラーメッセージを表示する
+        Controller->>View: showUserMenu()
+    else ユーザー情報を取得できた
+        Service->>Service: 入力内容を検証する
+
+        alt 入力内容が不正
+            Service-->>Controller: UpdateUserResult(false, "入力内容が不正です")
+            Controller->>View: showError(message)
+            View-->>User: エラー表示・再入力を求める
+        else 入力内容が有効
+            opt ユーザー名を変更する場合
+                Service->>UserRepo: existsByUsername(newUsername)
+                UserRepo->>DB: SELECT username FROM users WHERE username = ?
+                DB-->>UserRepo: 検索結果
+                UserRepo-->>Service: true / false
+            end
+
+            alt ユーザー名が重複している
+                Service-->>Controller: UpdateUserResult(false, "このユーザー名はすでに使用されています")
+                Controller->>View: showError(message)
+                View-->>User: エラー表示・再入力を求める
+            else 更新可能
+                opt パスワードを変更する場合
+                    Service->>Encoder: encode(newPassword)
+                    Encoder-->>Service: passwordHash
+                end
+
+                Service->>Service: Userの情報を変更する
+                Service->>UserRepo: update(user)
+                UserRepo->>DB: UPDATE users SET ...
+                DB-->>UserRepo: 更新結果
+                UserRepo-->>Service: 更新完了
+
+                Service-->>Controller: UpdateUserResult(true, "更新が完了しました")
+                Controller->>View: showMessage(message)
+                View-->>User: 更新完了メッセージを表示する
+                Controller->>View: showUserMenu()
+            end
+        end
+    end

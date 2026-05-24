@@ -1,0 +1,67 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as CategoryController
+    participant UseCase as ManageCategoryUseCase
+    participant Service as ManageCategoryService
+    participant CategoryRepo as CategoryRepository
+    participant QuestionRepo as QuestionRepository
+    participant DB as Database
+
+    Admin->>Controller: カテゴリ削除を選択する
+
+    Controller->>CategoryRepo: findAll()
+    CategoryRepo->>DB: SELECT * FROM categories
+    DB-->>CategoryRepo: カテゴリ一覧
+    CategoryRepo-->>Controller: List<Category>
+
+    alt カテゴリが存在しない
+        Controller->>View: showMessage("カテゴリが登録されていません")
+        View-->>Admin: カテゴリ未登録メッセージを表示する
+        Controller->>View: showCategoryMenu()
+    else カテゴリが存在する
+        Controller->>View: showCategories(categories)
+        View-->>Admin: カテゴリ一覧を表示する
+        Admin->>View: 削除対象カテゴリを選択する
+        View-->>Controller: categoryId
+
+        Controller->>View: confirmDelete()
+        View-->>Admin: 削除確認を表示する
+        Admin->>View: 削除するか選択する
+        View-->>Controller: true / false
+
+        alt キャンセル
+            Controller->>View: showCategoryMenu()
+            View-->>Admin: カテゴリ管理メニューを表示する
+        else 削除する
+            Controller->>UseCase: delete(command)
+            UseCase->>Service: delete(command)
+
+            Service->>CategoryRepo: hasChildren(categoryId)
+            CategoryRepo->>DB: SELECT COUNT(*) FROM categories WHERE parent_id = ?
+            DB-->>CategoryRepo: 件数
+            CategoryRepo-->>Service: true / false
+
+            Service->>QuestionRepo: existsByCategoryId(categoryId)
+            QuestionRepo->>DB: SELECT COUNT(*) FROM questions WHERE category_id = ?
+            DB-->>QuestionRepo: 件数
+            QuestionRepo-->>Service: true / false
+
+            alt 子カテゴリまたは問題が存在する
+                Service-->>Controller: CategoryResult(false, "このカテゴリは削除できません")
+                Controller->>View: showError(message)
+                View-->>Admin: 削除不可メッセージを表示する
+                Controller->>View: showCategoryMenu()
+            else 削除可能
+                Service->>CategoryRepo: deleteById(categoryId)
+                CategoryRepo->>DB: DELETE FROM categories WHERE id = ?
+                DB-->>CategoryRepo: 削除結果
+                CategoryRepo-->>Service: 削除完了
+
+                Service-->>Controller: CategoryResult(true, "カテゴリを削除しました")
+                Controller->>View: showMessage(message)
+                View-->>Admin: 削除完了メッセージを表示する
+                Controller->>View: showCategoryMenu()
+            end
+        end
+    end

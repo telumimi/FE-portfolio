@@ -1,0 +1,96 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as QuestionController
+    participant UseCase as AnswerQuestionUseCase
+    participant Service as AnswerQuestionService
+    participant CategoryRepo as CategoryRepository
+    participant QuestionRepo as QuestionRepository
+    participant ChoiceRepo as ChoiceRepository
+    participant HistoryRepo as AnswerHistoryRepository
+    participant Judge as AnswerJudge
+    participant DB as Database
+
+    User->>Controller: 問題演習を選択する
+
+    Controller->>CategoryRepo: findRootCategories()
+    CategoryRepo->>DB: SELECT * FROM categories WHERE parent_id IS NULL
+    DB-->>CategoryRepo: カテゴリ一覧
+    CategoryRepo-->>Controller: List<Category>
+
+    alt カテゴリが存在しない
+        Controller->>View: showError("カテゴリが登録されていません")
+        View-->>User: エラーメッセージを表示する
+        Controller->>View: showUserMenu()
+    else カテゴリが存在する
+        Controller->>View: showCategories(categories)
+        View-->>User: カテゴリ一覧を表示する
+        User->>View: カテゴリを選択する
+        View-->>Controller: categoryId
+
+        loop 子カテゴリが存在する間
+            Controller->>CategoryRepo: findChildren(categoryId)
+            CategoryRepo->>DB: SELECT * FROM categories WHERE parent_id = ?
+            DB-->>CategoryRepo: 子カテゴリ一覧
+            CategoryRepo-->>Controller: List<Category>
+
+            alt 子カテゴリが存在する
+                Controller->>View: showCategories(children)
+                View-->>User: 子カテゴリ一覧を表示する
+                User->>View: 子カテゴリを選択する
+                View-->>Controller: categoryId
+            else 子カテゴリが存在しない
+                Controller->>Controller: 出題対象カテゴリを決定する
+            end
+        end
+
+        Controller->>QuestionRepo: findByCategoryId(categoryId)
+        QuestionRepo->>DB: SELECT * FROM questions WHERE category_id = ?
+        DB-->>QuestionRepo: 問題一覧
+        QuestionRepo-->>Controller: List<Question>
+
+        alt 問題が存在しない
+            Controller->>View: showError("問題が登録されていません")
+            View-->>User: エラーメッセージを表示する
+            Controller->>View: showUserMenu()
+        else 問題が存在する
+            Controller->>Controller: 出題する問題を決定する
+            Controller->>ChoiceRepo: findByQuestionId(questionId)
+            ChoiceRepo->>DB: SELECT * FROM choices WHERE question_id = ?
+            DB-->>ChoiceRepo: 選択肢一覧
+            ChoiceRepo-->>Controller: List<Choice>
+
+            alt 選択肢が存在しない
+                Controller->>View: showError("選択肢が登録されていません")
+                View-->>User: エラーメッセージを表示する
+                Controller->>View: showUserMenu()
+            else 選択肢が存在する
+                Controller->>View: showQuestion(question, choices)
+                View-->>User: 問題文と選択肢を表示する
+
+                User->>View: 選択肢を選択する
+                View-->>Controller: selectedChoiceId
+
+                Controller->>UseCase: execute(command)
+                UseCase->>Service: execute(command)
+
+                Service->>ChoiceRepo: findById(selectedChoiceId)
+                ChoiceRepo->>DB: SELECT * FROM choices WHERE id = ?
+                DB-->>ChoiceRepo: 選択肢
+                ChoiceRepo-->>Service: Choice
+
+                Service->>Judge: judge(selectedChoice)
+                Judge-->>Service: true / false
+
+                Service->>Service: AnswerHistoryを生成する
+                Service->>HistoryRepo: save(history)
+                HistoryRepo->>DB: INSERT INTO answer_histories(...)
+                DB-->>HistoryRepo: 登録結果
+                HistoryRepo-->>Service: 登録完了
+
+                Service-->>Controller: AnswerQuestionResult
+                Controller->>View: showAnswerResult(result)
+                View-->>User: 正誤結果・正解・解説を表示する
+            end
+        end
+    end

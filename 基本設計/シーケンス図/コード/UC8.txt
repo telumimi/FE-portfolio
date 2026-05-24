@@ -1,0 +1,67 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as QuestionController
+    participant UseCase as RetryWrongQuestionUseCase
+    participant Service as RetryWrongQuestionService
+    participant HistoryRepo as AnswerHistoryRepository
+    participant QuestionRepo as QuestionRepository
+    participant ChoiceRepo as ChoiceRepository
+    participant Judge as AnswerJudge
+    participant DB as Database
+
+    User->>Controller: 誤答問題の再出題を選択する
+    Controller->>UseCase: execute(command)
+    UseCase->>Service: execute(command)
+
+    Service->>HistoryRepo: findWrongByUserId(userId)
+    HistoryRepo->>DB: SELECT * FROM answer_histories WHERE user_id = ? AND is_correct = false
+    DB-->>HistoryRepo: 誤答履歴一覧
+    HistoryRepo-->>Service: List<AnswerHistory>
+
+    alt 誤答履歴が存在しない
+        Service-->>Controller: RetryWrongQuestionResult(false, "再出題できる誤答問題はありません")
+        Controller->>View: showMessage(message)
+        View-->>User: メッセージを表示する
+        Controller->>View: showUserMenu()
+    else 誤答履歴が存在する
+        Service->>Service: 出題対象の誤答問題を決定する
+
+        Service->>QuestionRepo: findById(questionId)
+        QuestionRepo->>DB: SELECT * FROM questions WHERE id = ?
+        DB-->>QuestionRepo: 問題情報
+        QuestionRepo-->>Service: Question
+
+        Service->>ChoiceRepo: findByQuestionId(questionId)
+        ChoiceRepo->>DB: SELECT * FROM choices WHERE question_id = ?
+        DB-->>ChoiceRepo: 選択肢一覧
+        ChoiceRepo-->>Service: List<Choice>
+
+        Service-->>Controller: RetryWrongQuestionResult(問題情報, 選択肢情報)
+        Controller->>View: showQuestion(question, choices)
+        View-->>User: 問題文と選択肢を表示する
+
+        User->>View: 選択肢を選択する
+        View-->>Controller: selectedChoiceId
+
+        Controller->>UseCase: execute(answerCommand)
+        UseCase->>Service: execute(answerCommand)
+
+        Service->>ChoiceRepo: findById(selectedChoiceId)
+        ChoiceRepo->>DB: SELECT * FROM choices WHERE id = ?
+        DB-->>ChoiceRepo: 選択肢
+        ChoiceRepo-->>Service: Choice
+
+        Service->>Judge: judge(selectedChoice)
+        Judge-->>Service: true / false
+
+        Service->>Service: AnswerHistoryを生成する
+        Service->>HistoryRepo: save(history)
+        HistoryRepo->>DB: INSERT INTO answer_histories(...)
+        DB-->>HistoryRepo: 登録結果
+        HistoryRepo-->>Service: 登録完了
+
+        Service-->>Controller: RetryWrongQuestionResult
+        Controller->>View: showAnswerResult(result)
+        View-->>User: 正誤結果・正解・解説を表示する
+    end

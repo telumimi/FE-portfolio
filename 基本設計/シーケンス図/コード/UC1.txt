@@ -1,0 +1,58 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as AuthController
+    participant UseCase as RegisterUserUseCase
+    participant Service as RegisterUserService
+    participant UserRepo as UserRepository
+    participant Encoder as PasswordEncoder
+    participant DB as Database
+
+    User->>Controller: 新規登録を選択する
+    Controller->>View: showRegisterForm()
+    View-->>User: ユーザー名・パスワード・確認用パスワードの入力を求める
+
+    User->>View: ユーザー名・パスワード・確認用パスワードを入力する
+    View-->>Controller: RegisterUserCommand
+
+    Controller->>UseCase: execute(command)
+    UseCase->>Service: execute(command)
+
+    Service->>Service: 入力内容を検証する
+
+    alt 入力内容が不正
+        Service-->>Controller: RegisterUserResult(false, "入力内容が不正です")
+        Controller->>View: showError(message)
+        View-->>User: エラーメッセージを表示する
+        Controller->>View: showRegisterForm()
+        View-->>User: 再入力を求める
+    else 入力内容が有効
+        Service->>UserRepo: existsByUsername(username)
+        UserRepo->>DB: SELECT username FROM users WHERE username = ?
+        DB-->>UserRepo: 検索結果
+        UserRepo-->>Service: true / false
+
+        alt ユーザー名が重複している
+            Service-->>Controller: RegisterUserResult(false, "このユーザー名はすでに使用されています")
+            Controller->>View: showError(message)
+            View-->>User: ユーザー名重複エラーを表示する
+            Controller->>View: showRegisterForm()
+            View-->>User: 再入力を求める
+        else ユーザー名が重複していない
+            Service->>Encoder: encode(password)
+            Encoder-->>Service: passwordHash
+
+            Service->>Service: Userを生成する
+
+            Service->>UserRepo: save(user)
+            UserRepo->>DB: INSERT INTO users(...)
+            DB-->>UserRepo: 登録結果
+            UserRepo-->>Service: 登録完了
+
+            Service-->>Controller: RegisterUserResult(true, "登録が完了しました")
+            Controller->>View: showMessage(message)
+            View-->>User: 登録完了メッセージを表示する
+            Controller->>View: showLoginMenu()
+            View-->>User: ログイン画面を表示する
+        end
+    end

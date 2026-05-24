@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as CategoryController
+
+    Admin->>Controller: カテゴリ管理を選択する
+    Controller->>View: showCategoryMenu()
+    View-->>Admin: カテゴリ管理メニューを表示する
+
+    Admin->>View: 操作を選択する
+    View-->>Controller: 操作種別
+
+    alt 追加
+        Controller->>Controller: カテゴリ追加処理へ進む
+    else 更新
+        Controller->>Controller: カテゴリ更新処理へ進む
+    else 削除
+        Controller->>Controller: カテゴリ削除処理へ進む
+    end

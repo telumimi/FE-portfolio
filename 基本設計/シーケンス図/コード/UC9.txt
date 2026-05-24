@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as HistoryController
+    participant UseCase as DeleteHistoryUseCase
+    participant Service as DeleteHistoryService
+    participant HistoryRepo as AnswerHistoryRepository
+    participant DB as Database
+
+    User->>Controller: 履歴削除を選択する
+    Controller->>View: confirmDeleteHistory()
+    View-->>User: 履歴削除確認を表示する
+    User->>View: 削除するか選択する
+    View-->>Controller: true / false
+
+    alt キャンセル
+        Controller->>View: showUserMenu()
+        View-->>User: ユーザー用メニューを表示する
+    else 削除する
+        Controller->>UseCase: execute(command)
+        UseCase->>Service: execute(command)
+
+        Service->>HistoryRepo: existsByUserId(userId)
+        HistoryRepo->>DB: SELECT COUNT(*) FROM answer_histories WHERE user_id = ?
+        DB-->>HistoryRepo: 件数
+        HistoryRepo-->>Service: true / false
+
+        alt 削除対象が存在しない
+            Service-->>Controller: DeleteHistoryResult(false, "削除できる履歴はありません")
+            Controller->>View: showMessage(message)
+            View-->>User: メッセージを表示する
+            Controller->>View: showUserMenu()
+        else 削除対象が存在する
+            Service->>HistoryRepo: deleteByUserId(userId)
+            HistoryRepo->>DB: DELETE FROM answer_histories WHERE user_id = ?
+            DB-->>HistoryRepo: 削除結果
+            HistoryRepo-->>Service: 削除完了
+
+            Service-->>Controller: DeleteHistoryResult(true, "履歴を削除しました")
+            Controller->>View: showMessage(message)
+            View-->>User: 削除完了メッセージを表示する
+            Controller->>View: showUserMenu()
+        end
+    end

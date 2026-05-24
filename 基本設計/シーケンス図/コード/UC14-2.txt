@@ -1,0 +1,49 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as CategoryController
+    participant UseCase as ManageCategoryUseCase
+    participant Service as ManageCategoryService
+    participant CategoryRepo as CategoryRepository
+    participant DB as Database
+
+    Admin->>Controller: カテゴリ追加を選択する
+    Controller->>View: showAddCategoryForm()
+    View-->>Admin: カテゴリ名・親カテゴリの入力を求める
+    Admin->>View: カテゴリ情報を入力する
+    View-->>Controller: AddCategoryCommand
+
+    Controller->>UseCase: add(command)
+    UseCase->>Service: add(command)
+
+    Service->>Service: 入力内容を検証する
+
+    alt 入力内容が不正
+        Service-->>Controller: CategoryResult(false, "入力内容が不正です")
+        Controller->>View: showError(message)
+        View-->>Admin: エラー表示・再入力を求める
+    else 入力内容が有効
+        opt 親カテゴリを指定した場合
+            Service->>CategoryRepo: existsById(parentId)
+            CategoryRepo->>DB: SELECT COUNT(*) FROM categories WHERE id = ?
+            DB-->>CategoryRepo: 件数
+            CategoryRepo-->>Service: true / false
+        end
+
+        alt 親カテゴリが存在しない
+            Service-->>Controller: CategoryResult(false, "親カテゴリが存在しません")
+            Controller->>View: showError(message)
+            View-->>Admin: エラーメッセージを表示する
+        else 登録可能
+            Service->>Service: Categoryを生成する
+            Service->>CategoryRepo: save(category)
+            CategoryRepo->>DB: INSERT INTO categories(...)
+            DB-->>CategoryRepo: 登録結果
+            CategoryRepo-->>Service: 登録完了
+
+            Service-->>Controller: CategoryResult(true, "カテゴリを登録しました")
+            Controller->>View: showMessage(message)
+            View-->>Admin: 登録完了メッセージを表示する
+            Controller->>View: showCategoryMenu()
+        end
+    end

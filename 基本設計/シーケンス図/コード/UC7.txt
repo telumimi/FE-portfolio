@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as HistoryController
+    participant UseCase as ShowWrongHistoryUseCase
+    participant Service as ShowWrongHistoryService
+    participant HistoryRepo as AnswerHistoryRepository
+    participant DB as Database
+
+    User->>Controller: 誤答履歴確認を選択する
+    Controller->>UseCase: execute(command)
+    UseCase->>Service: execute(command)
+
+    Service->>HistoryRepo: findWrongByUserId(userId)
+    HistoryRepo->>DB: SELECT * FROM answer_histories WHERE user_id = ? AND is_correct = false
+    DB-->>HistoryRepo: 誤答履歴一覧
+    HistoryRepo-->>Service: List<AnswerHistory>
+
+    alt 誤答履歴が存在しない
+        Service-->>Controller: ShowWrongHistoryResult(false, "誤答履歴はありません")
+        Controller->>View: showMessage(message)
+        View-->>User: 誤答履歴なしメッセージを表示する
+        Controller->>View: showUserMenu()
+    else 誤答履歴が存在する
+        Service-->>Controller: ShowWrongHistoryResult(true, wrongHistories)
+        Controller->>View: showWrongHistories(wrongHistories)
+        View-->>User: 誤答履歴一覧を表示する
+        Controller->>View: showUserMenu()
+    end

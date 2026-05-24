@@ -1,0 +1,70 @@
+sequenceDiagram
+    actor Admin as 管理者
+    participant View as ConsoleView
+    participant Controller as AdminQuestionController
+    participant UseCase as AddQuestionUseCase
+    participant Service as AddQuestionService
+    participant CategoryRepo as CategoryRepository
+    participant QuestionRepo as QuestionRepository
+    participant ChoiceRepo as ChoiceRepository
+    participant DB as Database
+
+    Admin->>Controller: 問題追加を選択する
+
+    Controller->>CategoryRepo: findAll()
+    CategoryRepo->>DB: SELECT * FROM categories
+    DB-->>CategoryRepo: カテゴリ一覧
+    CategoryRepo-->>Controller: List<Category>
+
+    alt カテゴリが存在しない
+        Controller->>View: showError("カテゴリが登録されていません")
+        View-->>Admin: エラーメッセージを表示する
+        Controller->>View: showAdminMenu()
+    else カテゴリが存在する
+        Controller->>View: showCategories(categories)
+        View-->>Admin: カテゴリ一覧を表示する
+
+        Controller->>View: showAddQuestionForm()
+        View-->>Admin: 問題文・選択肢・正解・解説の入力を求める
+        Admin->>View: 問題情報を入力する
+        View-->>Controller: AddQuestionCommand
+
+        Controller->>UseCase: execute(command)
+        UseCase->>Service: execute(command)
+
+        Service->>Service: 入力内容を検証する
+
+        alt 入力内容が不正
+            Service-->>Controller: AddQuestionResult(false, "入力内容が不正です")
+            Controller->>View: showError(message)
+            View-->>Admin: エラー表示・再入力を求める
+        else 入力内容が有効
+            Service->>CategoryRepo: existsById(categoryId)
+            CategoryRepo->>DB: SELECT COUNT(*) FROM categories WHERE id = ?
+            DB-->>CategoryRepo: 件数
+            CategoryRepo-->>Service: true / false
+
+            alt カテゴリが存在しない
+                Service-->>Controller: AddQuestionResult(false, "カテゴリが存在しません")
+                Controller->>View: showError(message)
+                View-->>Admin: エラーメッセージを表示する
+            else 登録可能
+                Service->>Service: Questionを生成する
+                Service->>QuestionRepo: save(question)
+                QuestionRepo->>DB: INSERT INTO questions(...)
+                DB-->>QuestionRepo: 生成されたquestionId
+                QuestionRepo-->>Service: questionId
+
+                Service->>Service: Choice一覧を生成する
+                Service->>ChoiceRepo: saveAll(choices)
+                ChoiceRepo->>DB: INSERT INTO choices(...)
+                DB-->>ChoiceRepo: 登録結果
+                ChoiceRepo-->>Service: 登録完了
+
+                Service-->>Controller: AddQuestionResult(true, "問題を登録しました")
+                Controller->>View: showMessage(message)
+                View-->>Admin: 登録完了メッセージを表示する
+                Controller->>View: showAdminMenu()
+            end
+        end
+    end

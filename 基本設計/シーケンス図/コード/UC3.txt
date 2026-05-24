@@ -1,0 +1,65 @@
+sequenceDiagram
+    actor User as ユーザー
+    participant View as ConsoleView
+    participant Controller as AuthController
+    participant UseCase as LoginUseCase
+    participant Service as LoginService
+    participant UserRepo as UserRepository
+    participant Encoder as PasswordEncoder
+    participant Session as LoginSession
+    participant DB as Database
+
+    User->>Controller: ログインを選択する
+    Controller->>View: showLoginForm()
+    View-->>User: ユーザー名・パスワードの入力を求める
+
+    User->>View: ユーザー名・パスワードを入力する
+    View-->>Controller: LoginCommand
+
+    Controller->>UseCase: execute(command)
+    UseCase->>Service: execute(command)
+
+    Service->>Service: 入力内容を検証する
+
+    alt 入力内容が不正
+        Service-->>Controller: LoginResult(false, "入力内容が不正です")
+        Controller->>View: showError(message)
+        View-->>User: エラー表示・再入力を求める
+    else 入力内容が有効
+        Service->>UserRepo: findByUsername(username)
+        UserRepo->>DB: SELECT * FROM users WHERE username = ?
+        DB-->>UserRepo: ユーザー情報
+        UserRepo-->>Service: User
+
+        alt ユーザーが存在しない
+            Service-->>Controller: LoginResult(false, "ユーザー名またはパスワードが正しくありません")
+            Controller->>View: showError(message)
+            View-->>User: ログインエラーを表示する
+        else ユーザーが存在する
+            Service->>Encoder: matches(password, passwordHash)
+            Encoder-->>Service: true / false
+
+            alt パスワードが正しくない
+                Service-->>Controller: LoginResult(false, "ユーザー名またはパスワードが正しくありません")
+                Controller->>View: showError(message)
+                View-->>User: ログインエラーを表示する
+            else ログイン成功
+                Service->>Session: login(user)
+                Session-->>Service: ログイン状態を保持
+
+                Service-->>Controller: LoginResult(true, "ログインしました", role)
+
+                alt roleがUSER
+                    Controller->>View: showMessage(message)
+                    View-->>User: ログイン完了メッセージを表示する
+                    Controller->>View: showUserMenu()
+                    View-->>User: ユーザー用メニューを表示する
+                else roleがADMIN
+                    Controller->>View: showMessage(message)
+                    View-->>User: ログイン完了メッセージを表示する
+                    Controller->>View: showAdminMenu()
+                    View-->>User: 管理者用メニューを表示する
+                end
+            end
+        end
+    end
