@@ -1,0 +1,68 @@
+classDiagram
+
+namespace Domain {
+    class AnswerHistory {
+        -int id
+        -int userId
+        -int questionId
+        -int selectedChoiceId
+        -boolean correct
+    }
+}
+
+namespace Application {
+    class DeleteHistoryUseCase {
+        <<interface>>
+        +execute(DeleteHistoryCommand command) DeleteHistoryResult
+    }
+
+    class DeleteHistoryService {
+        -AnswerHistoryRepository answerHistoryRepository
+        +execute(DeleteHistoryCommand command) DeleteHistoryResult
+    }
+
+    class DeleteHistoryCommand {
+        -int userId
+    }
+
+    class DeleteHistoryResult {
+        -boolean success
+        -String message
+    }
+
+    class AnswerHistoryRepository {
+        <<interface>>
+        +existsByUserId(int userId) boolean
+        +deleteByUserId(int userId) void
+    }
+}
+
+namespace Infrastructure {
+    class DeleteHistoryController {
+        -DeleteHistoryUseCase deleteHistoryUseCase
+        -ConsoleView consoleView
+        +delete() void
+    }
+
+    class ConsoleView {
+        +confirmDeleteHistory() boolean
+        +showMessage(String message) void
+        +showUserMenu() void
+    }
+
+    class JdbcAnswerHistoryRepository {
+        +existsByUserId(int userId) boolean
+        +deleteByUserId(int userId) void
+    }
+}
+
+DeleteHistoryUseCase <|.. DeleteHistoryService
+AnswerHistoryRepository <|.. JdbcAnswerHistoryRepository
+
+DeleteHistoryController o-- DeleteHistoryUseCase
+DeleteHistoryController o-- ConsoleView
+DeleteHistoryService o-- AnswerHistoryRepository
+
+DeleteHistoryService ..> DeleteHistoryCommand
+DeleteHistoryService ..> DeleteHistoryResult
+JdbcAnswerHistoryRepository ..> AnswerHistory

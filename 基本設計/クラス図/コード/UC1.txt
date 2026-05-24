@@ -1,0 +1,110 @@
+classDiagram
+
+namespace Domain {
+    class Account {
+        <<abstract>>
+        -int id
+        -String username
+        -String passwordHash
+        -Role role
+    }
+
+    class User {
+        +User(String username, String passwordHash)
+    }
+
+    class Role {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+
+    class DomainException {
+        <<abstract>>
+        -String message
+    }
+
+    class InvalidUserNameException
+    class PasswordMismatchException
+    class DuplicateUserNameException
+}
+
+namespace Application {
+    class RegisterUserUseCase {
+        <<interface>>
+        +execute(RegisterUserCommand command) RegisterUserResult
+    }
+
+    class RegisterUserService {
+        -UserRepository userRepository
+        -PasswordEncoder passwordEncoder
+        +execute(RegisterUserCommand command) RegisterUserResult
+    }
+
+    class RegisterUserCommand {
+        -String username
+        -String password
+        -String confirmPassword
+    }
+
+    class RegisterUserResult {
+        -boolean success
+        -String message
+    }
+
+    class UserRepository {
+        <<interface>>
+        +existsByUsername(String username) boolean
+        +save(User user) void
+    }
+
+    class PasswordEncoder {
+        <<interface>>
+        +encode(String rawPassword) String
+    }
+}
+
+namespace Infrastructure {
+    class RegisterUserController {
+        -RegisterUserUseCase registerUserUseCase
+        -ConsoleView consoleView
+        +register() void
+    }
+
+    class ConsoleView {
+        +showRegisterForm() RegisterUserCommand
+        +showMessage(String message) void
+        +showError(String message) void
+        +showLoginMenu() void
+    }
+
+    class JdbcUserRepository {
+        +existsByUsername(String username) boolean
+        +save(User user) void
+    }
+
+    class SimplePasswordEncoder {
+        +encode(String rawPassword) String
+    }
+}
+
+Account <|-- User
+DomainException <|-- InvalidUserNameException
+DomainException <|-- PasswordMismatchException
+DomainException <|-- DuplicateUserNameException
+
+RegisterUserUseCase <|.. RegisterUserService
+UserRepository <|.. JdbcUserRepository
+PasswordEncoder <|.. SimplePasswordEncoder
+
+RegisterUserController o-- RegisterUserUseCase
+RegisterUserController o-- ConsoleView
+RegisterUserService o-- UserRepository
+RegisterUserService o-- PasswordEncoder
+User o-- Role
+
+RegisterUserService ..> User
+RegisterUserService ..> RegisterUserCommand
+RegisterUserService ..> RegisterUserResult
+JdbcUserRepository ..> User
+ConsoleView ..> RegisterUserCommand

@@ -1,0 +1,70 @@
+classDiagram
+
+namespace Domain {
+    class Question {
+        -int id
+        -int categoryId
+        -String questionText
+        -String explanation
+    }
+
+    class Category {
+        -int id
+        -String name
+        -int parentId
+    }
+}
+
+namespace Application {
+    class ShowQuestionListUseCase {
+        <<interface>>
+        +execute() ShowQuestionListResult
+    }
+
+    class ShowQuestionListService {
+        -QuestionRepository questionRepository
+        +execute() ShowQuestionListResult
+    }
+
+    class ShowQuestionListResult {
+        -boolean success
+        -String message
+        -List~Question~ questions
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +findAll() List~Question~
+    }
+}
+
+namespace Infrastructure {
+    class ShowQuestionListController {
+        -ShowQuestionListUseCase showQuestionListUseCase
+        -ConsoleView consoleView
+        +show() void
+    }
+
+    class ConsoleView {
+        +showQuestions(List~Question~ questions) void
+        +showMessage(String message) void
+        +showAdminMenu() void
+    }
+
+    class JdbcQuestionRepository {
+        +findAll() List~Question~
+    }
+}
+
+ShowQuestionListUseCase <|.. ShowQuestionListService
+QuestionRepository <|.. JdbcQuestionRepository
+
+ShowQuestionListController o-- ShowQuestionListUseCase
+ShowQuestionListController o-- ConsoleView
+ShowQuestionListService o-- QuestionRepository
+
+Question o-- Category
+
+ShowQuestionListService ..> ShowQuestionListResult
+JdbcQuestionRepository ..> Question
+ConsoleView ..> Question

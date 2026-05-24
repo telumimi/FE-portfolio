@@ -1,0 +1,116 @@
+classDiagram
+
+namespace Domain {
+    class Category {
+        -int id
+        -String name
+        -int parentId
+        +changeName(String name) void
+        +changeParentId(int parentId) void
+    }
+
+    class DomainException {
+        <<abstract>>
+        -String message
+    }
+
+    class InvalidCategoryException
+    class CategoryDeleteNotAllowedException
+}
+
+namespace Application {
+    class ManageCategoryUseCase {
+        <<interface>>
+        +add(AddCategoryCommand command) CategoryResult
+        +update(UpdateCategoryCommand command) CategoryResult
+        +delete(DeleteCategoryCommand command) CategoryResult
+    }
+
+    class ManageCategoryService {
+        -CategoryRepository categoryRepository
+        -QuestionRepository questionRepository
+        +add(AddCategoryCommand command) CategoryResult
+        +update(UpdateCategoryCommand command) CategoryResult
+        +delete(DeleteCategoryCommand command) CategoryResult
+    }
+
+    class AddCategoryCommand {
+        -String name
+        -int parentId
+    }
+
+    class UpdateCategoryCommand {
+        -int categoryId
+        -String name
+        -int parentId
+    }
+
+    class DeleteCategoryCommand {
+        -int categoryId
+    }
+
+    class CategoryResult {
+        -boolean success
+        -String message
+    }
+
+    class CategoryRepository {
+        <<interface>>
+        +findAll() List~Category~
+        +existsById(int categoryId) boolean
+        +hasChildren(int categoryId) boolean
+        +save(Category category) void
+        +update(Category category) void
+        +deleteById(int categoryId) void
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +existsByCategoryId(int categoryId) boolean
+    }
+}
+
+namespace Infrastructure {
+    class ManageCategoryController {
+        -ManageCategoryUseCase manageCategoryUseCase
+        -ConsoleView consoleView
+        +manage() void
+    }
+
+    class ConsoleView {
+        +showCategoryMenu() void
+        +showCategories(List~Category~ categories) void
+        +showAddCategoryForm() AddCategoryCommand
+        +showUpdateCategoryForm() UpdateCategoryCommand
+        +selectCategory() int
+        +confirmDelete() boolean
+        +showMessage(String message) void
+        +showAdminMenu() void
+    }
+
+    class JdbcCategoryRepository
+    class JdbcQuestionRepository
+}
+
+DomainException <|-- InvalidCategoryException
+DomainException <|-- CategoryDeleteNotAllowedException
+
+ManageCategoryUseCase <|.. ManageCategoryService
+CategoryRepository <|.. JdbcCategoryRepository
+QuestionRepository <|.. JdbcQuestionRepository
+
+ManageCategoryController o-- ManageCategoryUseCase
+ManageCategoryController o-- ConsoleView
+
+ManageCategoryService o-- CategoryRepository
+ManageCategoryService o-- QuestionRepository
+
+Category o-- Category
+
+ManageCategoryService ..> AddCategoryCommand
+ManageCategoryService ..> UpdateCategoryCommand
+ManageCategoryService ..> DeleteCategoryCommand
+ManageCategoryService ..> CategoryResult
+ConsoleView ..> Category
+ConsoleView ..> AddCategoryCommand
+ConsoleView ..> UpdateCategoryCommand

@@ -1,0 +1,110 @@
+classDiagram
+
+namespace Domain {
+    class Question {
+        -int id
+        -String questionText
+        -String explanation
+    }
+
+    class Choice {
+        -int id
+        -String choiceText
+        -boolean correct
+    }
+
+    class AnswerHistory {
+        -int id
+        -int userId
+        -int questionId
+        -int selectedChoiceId
+        -boolean correct
+    }
+
+    class AnswerJudge {
+        +judge(Choice selectedChoice) boolean
+    }
+}
+
+namespace Application {
+    class RetryWrongQuestionUseCase {
+        <<interface>>
+        +execute(RetryWrongQuestionCommand command) RetryWrongQuestionResult
+    }
+
+    class RetryWrongQuestionService {
+        -AnswerHistoryRepository answerHistoryRepository
+        -QuestionRepository questionRepository
+        -ChoiceRepository choiceRepository
+        +execute(RetryWrongQuestionCommand command) RetryWrongQuestionResult
+    }
+
+    class RetryWrongQuestionCommand {
+        -int userId
+        -int selectedChoiceId
+    }
+
+    class RetryWrongQuestionResult {
+        -boolean correct
+        -String message
+        -String explanation
+    }
+
+    class AnswerHistoryRepository {
+        <<interface>>
+        +findWrongByUserId(int userId) List~AnswerHistory~
+        +save(AnswerHistory history) void
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +findById(int questionId) Question
+    }
+
+    class ChoiceRepository {
+        <<interface>>
+        +findByQuestionId(int questionId) List~Choice~
+        +findById(int choiceId) Choice
+    }
+}
+
+namespace Infrastructure {
+    class RetryWrongQuestionController {
+        -RetryWrongQuestionUseCase retryWrongQuestionUseCase
+        -ConsoleView consoleView
+        +retry() void
+    }
+
+    class ConsoleView {
+        +showQuestion(Question question, List~Choice~ choices) void
+        +selectChoice() int
+        +showAnswerResult(RetryWrongQuestionResult result) void
+        +showUserMenu() void
+    }
+
+    class JdbcAnswerHistoryRepository
+    class JdbcQuestionRepository
+    class JdbcChoiceRepository
+}
+
+RetryWrongQuestionUseCase <|.. RetryWrongQuestionService
+AnswerHistoryRepository <|.. JdbcAnswerHistoryRepository
+QuestionRepository <|.. JdbcQuestionRepository
+ChoiceRepository <|.. JdbcChoiceRepository
+
+RetryWrongQuestionController o-- RetryWrongQuestionUseCase
+RetryWrongQuestionController o-- ConsoleView
+
+RetryWrongQuestionService o-- AnswerHistoryRepository
+RetryWrongQuestionService o-- QuestionRepository
+RetryWrongQuestionService o-- ChoiceRepository
+RetryWrongQuestionService o-- AnswerJudge
+
+Question o-- Choice
+AnswerHistory o-- Question
+AnswerHistory o-- Choice
+
+RetryWrongQuestionService ..> RetryWrongQuestionCommand
+RetryWrongQuestionService ..> RetryWrongQuestionResult
+ConsoleView ..> Question
+ConsoleView ..> Choice

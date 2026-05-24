@@ -1,0 +1,86 @@
+classDiagram
+
+namespace Domain {
+    class Question {
+        -int id
+        -int categoryId
+        -String questionText
+        -String explanation
+    }
+
+    class Choice {
+        -int id
+        -int questionId
+        -String choiceText
+        -boolean correct
+    }
+}
+
+namespace Application {
+    class DeleteQuestionUseCase {
+        <<interface>>
+        +execute(DeleteQuestionCommand command) DeleteQuestionResult
+    }
+
+    class DeleteQuestionService {
+        -QuestionRepository questionRepository
+        -ChoiceRepository choiceRepository
+        +execute(DeleteQuestionCommand command) DeleteQuestionResult
+    }
+
+    class DeleteQuestionCommand {
+        -int questionId
+    }
+
+    class DeleteQuestionResult {
+        -boolean success
+        -String message
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +findAll() List~Question~
+        +existsById(int questionId) boolean
+        +deleteById(int questionId) void
+    }
+
+    class ChoiceRepository {
+        <<interface>>
+        +deleteByQuestionId(int questionId) void
+    }
+}
+
+namespace Infrastructure {
+    class DeleteQuestionController {
+        -DeleteQuestionUseCase deleteQuestionUseCase
+        -ConsoleView consoleView
+        +delete() void
+    }
+
+    class ConsoleView {
+        +showQuestions(List~Question~ questions) void
+        +selectQuestion() int
+        +confirmDelete() boolean
+        +showMessage(String message) void
+        +showAdminMenu() void
+    }
+
+    class JdbcQuestionRepository
+    class JdbcChoiceRepository
+}
+
+DeleteQuestionUseCase <|.. DeleteQuestionService
+QuestionRepository <|.. JdbcQuestionRepository
+ChoiceRepository <|.. JdbcChoiceRepository
+
+DeleteQuestionController o-- DeleteQuestionUseCase
+DeleteQuestionController o-- ConsoleView
+
+DeleteQuestionService o-- QuestionRepository
+DeleteQuestionService o-- ChoiceRepository
+
+Question o-- Choice
+
+DeleteQuestionService ..> DeleteQuestionCommand
+DeleteQuestionService ..> DeleteQuestionResult
+ConsoleView ..> Question

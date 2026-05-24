@@ -1,0 +1,83 @@
+classDiagram
+
+namespace Domain {
+    class AnswerHistory {
+        -int id
+        -int userId
+        -int questionId
+        -int selectedChoiceId
+        -boolean correct
+    }
+
+    class Question {
+        -int id
+        -String questionText
+        -String explanation
+    }
+
+    class Choice {
+        -int id
+        -String choiceText
+        -boolean correct
+    }
+}
+
+namespace Application {
+    class ShowWrongHistoryUseCase {
+        <<interface>>
+        +execute(ShowWrongHistoryCommand command) ShowWrongHistoryResult
+    }
+
+    class ShowWrongHistoryService {
+        -AnswerHistoryRepository answerHistoryRepository
+        +execute(ShowWrongHistoryCommand command) ShowWrongHistoryResult
+    }
+
+    class ShowWrongHistoryCommand {
+        -int userId
+    }
+
+    class ShowWrongHistoryResult {
+        -boolean success
+        -String message
+        -List~AnswerHistory~ wrongHistories
+    }
+
+    class AnswerHistoryRepository {
+        <<interface>>
+        +findWrongByUserId(int userId) List~AnswerHistory~
+    }
+}
+
+namespace Infrastructure {
+    class ShowWrongHistoryController {
+        -ShowWrongHistoryUseCase showWrongHistoryUseCase
+        -ConsoleView consoleView
+        +show() void
+    }
+
+    class ConsoleView {
+        +showWrongHistories(List~AnswerHistory~ histories) void
+        +showMessage(String message) void
+        +showUserMenu() void
+    }
+
+    class JdbcAnswerHistoryRepository {
+        +findWrongByUserId(int userId) List~AnswerHistory~
+    }
+}
+
+ShowWrongHistoryUseCase <|.. ShowWrongHistoryService
+AnswerHistoryRepository <|.. JdbcAnswerHistoryRepository
+
+ShowWrongHistoryController o-- ShowWrongHistoryUseCase
+ShowWrongHistoryController o-- ConsoleView
+ShowWrongHistoryService o-- AnswerHistoryRepository
+
+AnswerHistory o-- Question
+AnswerHistory o-- Choice
+
+ShowWrongHistoryService ..> ShowWrongHistoryCommand
+ShowWrongHistoryService ..> ShowWrongHistoryResult
+JdbcAnswerHistoryRepository ..> AnswerHistory
+ConsoleView ..> AnswerHistory

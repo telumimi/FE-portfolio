@@ -1,0 +1,115 @@
+classDiagram
+
+namespace Domain {
+    class Account {
+        <<abstract>>
+        -int id
+        -String username
+        -String passwordHash
+        -Role role
+    }
+
+    class User {
+    }
+
+    class Role {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+
+    class LoginSession {
+        -int loginUserId
+        -Role role
+        +login(User user) void
+        +logout() void
+        +isLoggedIn() boolean
+    }
+
+    class DomainException {
+        <<abstract>>
+        -String message
+    }
+
+    class AuthenticationException
+}
+
+namespace Application {
+    class LoginUseCase {
+        <<interface>>
+        +execute(LoginCommand command) LoginResult
+    }
+
+    class LoginService {
+        -UserRepository userRepository
+        -PasswordEncoder passwordEncoder
+        -LoginSession loginSession
+        +execute(LoginCommand command) LoginResult
+    }
+
+    class LoginCommand {
+        -String username
+        -String password
+    }
+
+    class LoginResult {
+        -boolean success
+        -String message
+        -Role role
+    }
+
+    class UserRepository {
+        <<interface>>
+        +findByUsername(String username) User
+    }
+
+    class PasswordEncoder {
+        <<interface>>
+        +matches(String rawPassword, String passwordHash) boolean
+    }
+}
+
+namespace Infrastructure {
+    class LoginController {
+        -LoginUseCase loginUseCase
+        -ConsoleView consoleView
+        +login() void
+    }
+
+    class ConsoleView {
+        +showLoginForm() LoginCommand
+        +showUserMenu() void
+        +showAdminMenu() void
+        +showError(String message) void
+        +showMessage(String message) void
+    }
+
+    class JdbcUserRepository {
+        +findByUsername(String username) User
+    }
+
+    class SimplePasswordEncoder {
+        +matches(String rawPassword, String passwordHash) boolean
+    }
+}
+
+Account <|-- User
+DomainException <|-- AuthenticationException
+
+LoginUseCase <|.. LoginService
+UserRepository <|.. JdbcUserRepository
+PasswordEncoder <|.. SimplePasswordEncoder
+
+LoginController o-- LoginUseCase
+LoginController o-- ConsoleView
+LoginService o-- UserRepository
+LoginService o-- PasswordEncoder
+LoginService o-- LoginSession
+User o-- Role
+LoginSession o-- Role
+
+LoginService ..> LoginCommand
+LoginService ..> LoginResult
+LoginService ..> User
+JdbcUserRepository ..> User
+ConsoleView ..> LoginCommand

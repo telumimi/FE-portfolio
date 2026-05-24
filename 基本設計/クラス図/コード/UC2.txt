@@ -1,0 +1,114 @@
+classDiagram
+
+namespace Domain {
+    class Account {
+        <<abstract>>
+        -int id
+        -String username
+        -String passwordHash
+        -Role role
+    }
+
+    class User {
+        +changeUsername(String username) void
+        +changePassword(String passwordHash) void
+    }
+
+    class Role {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+
+    class DomainException {
+        <<abstract>>
+        -String message
+    }
+
+    class InvalidUserNameException
+    class DuplicateUserNameException
+    class PasswordMismatchException
+}
+
+namespace Application {
+    class UpdateUserUseCase {
+        <<interface>>
+        +execute(UpdateUserCommand command) UpdateUserResult
+    }
+
+    class UpdateUserService {
+        -UserRepository userRepository
+        -PasswordEncoder passwordEncoder
+        +execute(UpdateUserCommand command) UpdateUserResult
+    }
+
+    class UpdateUserCommand {
+        -int userId
+        -String newUsername
+        -String newPassword
+        -String confirmPassword
+    }
+
+    class UpdateUserResult {
+        -boolean success
+        -String message
+    }
+
+    class UserRepository {
+        <<interface>>
+        +findById(int userId) User
+        +existsByUsername(String username) boolean
+        +update(User user) void
+    }
+
+    class PasswordEncoder {
+        <<interface>>
+        +encode(String rawPassword) String
+    }
+}
+
+namespace Infrastructure {
+    class UpdateUserController {
+        -UpdateUserUseCase updateUserUseCase
+        -ConsoleView consoleView
+        +update() void
+    }
+
+    class ConsoleView {
+        +showUpdateUserForm() UpdateUserCommand
+        +showMessage(String message) void
+        +showError(String message) void
+        +showUserMenu() void
+    }
+
+    class JdbcUserRepository {
+        +findById(int userId) User
+        +existsByUsername(String username) boolean
+        +update(User user) void
+    }
+
+    class SimplePasswordEncoder {
+        +encode(String rawPassword) String
+    }
+}
+
+Account <|-- User
+DomainException <|-- InvalidUserNameException
+DomainException <|-- DuplicateUserNameException
+DomainException <|-- PasswordMismatchException
+
+UpdateUserUseCase <|.. UpdateUserService
+UserRepository <|.. JdbcUserRepository
+PasswordEncoder <|.. SimplePasswordEncoder
+
+UpdateUserController o-- UpdateUserUseCase
+UpdateUserController o-- ConsoleView
+UpdateUserService o-- UserRepository
+UpdateUserService o-- PasswordEncoder
+User o-- Role
+
+UpdateUserService ..> User
+UpdateUserService ..> UpdateUserCommand
+UpdateUserService ..> UpdateUserResult
+JdbcUserRepository ..> User
+ConsoleView ..> UpdateUserCommand

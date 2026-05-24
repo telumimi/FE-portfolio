@@ -1,0 +1,57 @@
+classDiagram
+
+namespace Domain {
+    class LoginSession {
+        -int loginUserId
+        -Role role
+        +logout() void
+        +isLoggedIn() boolean
+    }
+
+    class Role {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+}
+
+namespace Application {
+    class LogoutUseCase {
+        <<interface>>
+        +execute() LogoutResult
+    }
+
+    class LogoutService {
+        -LoginSession loginSession
+        +execute() LogoutResult
+    }
+
+    class LogoutResult {
+        -boolean success
+        -String message
+    }
+}
+
+namespace Infrastructure {
+    class LogoutController {
+        -LogoutUseCase logoutUseCase
+        -ConsoleView consoleView
+        +logout() void
+    }
+
+    class ConsoleView {
+        +confirmLogout() boolean
+        +showMessage(String message) void
+        +showLoginMenu() void
+        +showCurrentMenu() void
+    }
+}
+
+LogoutUseCase <|.. LogoutService
+
+LogoutController o-- LogoutUseCase
+LogoutController o-- ConsoleView
+LogoutService o-- LoginSession
+LoginSession o-- Role
+
+LogoutService ..> LogoutResult

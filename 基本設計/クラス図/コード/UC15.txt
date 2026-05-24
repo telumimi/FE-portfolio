@@ -1,0 +1,59 @@
+classDiagram
+
+namespace Domain {
+    class LoginSession {
+        -int loginUserId
+        -Role role
+        +getRole() Role
+        +isLoggedIn() boolean
+    }
+
+    class Role {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+}
+
+namespace Application {
+    class ReturnHomeUseCase {
+        <<interface>>
+        +execute() ReturnHomeResult
+    }
+
+    class ReturnHomeService {
+        -LoginSession loginSession
+        +execute() ReturnHomeResult
+    }
+
+    class ReturnHomeResult {
+        -boolean success
+        -Role role
+        -String message
+    }
+}
+
+namespace Infrastructure {
+    class ReturnHomeController {
+        -ReturnHomeUseCase returnHomeUseCase
+        -ConsoleView consoleView
+        +returnHome() void
+    }
+
+    class ConsoleView {
+        +showUserMenu() void
+        +showAdminMenu() void
+        +showLoginMenu() void
+        +showMessage(String message) void
+    }
+}
+
+ReturnHomeUseCase <|.. ReturnHomeService
+
+ReturnHomeController o-- ReturnHomeUseCase
+ReturnHomeController o-- ConsoleView
+ReturnHomeService o-- LoginSession
+LoginSession o-- Role
+
+ReturnHomeService ..> ReturnHomeResult
+ReturnHomeResult o-- Role

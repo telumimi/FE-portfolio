@@ -1,0 +1,115 @@
+classDiagram
+
+namespace Domain {
+    class Category {
+        -int id
+        -String name
+        -int parentId
+    }
+
+    class Question {
+        -int id
+        -int categoryId
+        -String questionText
+        -String explanation
+    }
+
+    class Choice {
+        -int id
+        -int questionId
+        -String choiceText
+        -boolean correct
+    }
+
+    class DomainException {
+        <<abstract>>
+        -String message
+    }
+
+    class InvalidQuestionException
+}
+
+namespace Application {
+    class AddQuestionUseCase {
+        <<interface>>
+        +execute(AddQuestionCommand command) AddQuestionResult
+    }
+
+    class AddQuestionService {
+        -CategoryRepository categoryRepository
+        -QuestionRepository questionRepository
+        -ChoiceRepository choiceRepository
+        +execute(AddQuestionCommand command) AddQuestionResult
+    }
+
+    class AddQuestionCommand {
+        -int categoryId
+        -String questionText
+        -List~String~ choiceTexts
+        -int correctChoiceNumber
+        -String explanation
+    }
+
+    class AddQuestionResult {
+        -boolean success
+        -String message
+    }
+
+    class CategoryRepository {
+        <<interface>>
+        +existsById(int categoryId) boolean
+        +findAll() List~Category~
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +save(Question question) int
+    }
+
+    class ChoiceRepository {
+        <<interface>>
+        +saveAll(List~Choice~ choices) void
+    }
+}
+
+namespace Infrastructure {
+    class AddQuestionController {
+        -AddQuestionUseCase addQuestionUseCase
+        -ConsoleView consoleView
+        +add() void
+    }
+
+    class ConsoleView {
+        +showCategories(List~Category~ categories) void
+        +showAddQuestionForm() AddQuestionCommand
+        +showMessage(String message) void
+        +showAdminMenu() void
+    }
+
+    class JdbcCategoryRepository
+    class JdbcQuestionRepository
+    class JdbcChoiceRepository
+}
+
+DomainException <|-- InvalidQuestionException
+
+AddQuestionUseCase <|.. AddQuestionService
+CategoryRepository <|.. JdbcCategoryRepository
+QuestionRepository <|.. JdbcQuestionRepository
+ChoiceRepository <|.. JdbcChoiceRepository
+
+AddQuestionController o-- AddQuestionUseCase
+AddQuestionController o-- ConsoleView
+
+AddQuestionService o-- CategoryRepository
+AddQuestionService o-- QuestionRepository
+AddQuestionService o-- ChoiceRepository
+
+Category o-- Question
+Question o-- Choice
+
+AddQuestionService ..> AddQuestionCommand
+AddQuestionService ..> AddQuestionResult
+AddQuestionService ..> Question
+AddQuestionService ..> Choice
+ConsoleView ..> AddQuestionCommand

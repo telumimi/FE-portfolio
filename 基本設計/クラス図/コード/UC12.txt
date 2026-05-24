@@ -1,0 +1,105 @@
+classDiagram
+
+namespace Domain {
+    class Question {
+        -int id
+        -int categoryId
+        -String questionText
+        -String explanation
+        +changeText(String questionText) void
+        +changeExplanation(String explanation) void
+    }
+
+    class Choice {
+        -int id
+        -int questionId
+        -String choiceText
+        -boolean correct
+        +changeText(String choiceText) void
+        +changeCorrect(boolean correct) void
+    }
+
+    class DomainException {
+        <<abstract>>
+        -String message
+    }
+
+    class InvalidQuestionException
+}
+
+namespace Application {
+    class UpdateQuestionUseCase {
+        <<interface>>
+        +execute(UpdateQuestionCommand command) UpdateQuestionResult
+    }
+
+    class UpdateQuestionService {
+        -QuestionRepository questionRepository
+        -ChoiceRepository choiceRepository
+        +execute(UpdateQuestionCommand command) UpdateQuestionResult
+    }
+
+    class UpdateQuestionCommand {
+        -int questionId
+        -String questionText
+        -List~String~ choiceTexts
+        -int correctChoiceNumber
+        -String explanation
+    }
+
+    class UpdateQuestionResult {
+        -boolean success
+        -String message
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +findAll() List~Question~
+        +findById(int questionId) Question
+        +update(Question question) void
+    }
+
+    class ChoiceRepository {
+        <<interface>>
+        +findByQuestionId(int questionId) List~Choice~
+        +updateAll(List~Choice~ choices) void
+    }
+}
+
+namespace Infrastructure {
+    class UpdateQuestionController {
+        -UpdateQuestionUseCase updateQuestionUseCase
+        -ConsoleView consoleView
+        +update() void
+    }
+
+    class ConsoleView {
+        +showQuestions(List~Question~ questions) void
+        +selectQuestion() int
+        +showUpdateQuestionForm() UpdateQuestionCommand
+        +showMessage(String message) void
+        +showAdminMenu() void
+    }
+
+    class JdbcQuestionRepository
+    class JdbcChoiceRepository
+}
+
+DomainException <|-- InvalidQuestionException
+
+UpdateQuestionUseCase <|.. UpdateQuestionService
+QuestionRepository <|.. JdbcQuestionRepository
+ChoiceRepository <|.. JdbcChoiceRepository
+
+UpdateQuestionController o-- UpdateQuestionUseCase
+UpdateQuestionController o-- ConsoleView
+
+UpdateQuestionService o-- QuestionRepository
+UpdateQuestionService o-- ChoiceRepository
+
+Question o-- Choice
+
+UpdateQuestionService ..> UpdateQuestionCommand
+UpdateQuestionService ..> UpdateQuestionResult
+ConsoleView ..> Question
+ConsoleView ..> UpdateQuestionCommand

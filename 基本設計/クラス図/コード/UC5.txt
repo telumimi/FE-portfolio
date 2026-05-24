@@ -1,0 +1,134 @@
+classDiagram
+
+namespace Domain {
+    class Category {
+        -int id
+        -String name
+        -int parentId
+    }
+
+    class Question {
+        -int id
+        -int categoryId
+        -String questionText
+        -String explanation
+    }
+
+    class Choice {
+        -int id
+        -int questionId
+        -String choiceText
+        -boolean correct
+    }
+
+    class AnswerHistory {
+        -int id
+        -int userId
+        -int questionId
+        -int selectedChoiceId
+        -boolean correct
+    }
+
+    class AnswerJudge {
+        +judge(Choice selectedChoice) boolean
+    }
+}
+
+namespace Application {
+    class AnswerQuestionUseCase {
+        <<interface>>
+        +execute(AnswerQuestionCommand command) AnswerQuestionResult
+    }
+
+    class AnswerQuestionService {
+        -CategoryRepository categoryRepository
+        -QuestionRepository questionRepository
+        -ChoiceRepository choiceRepository
+        -AnswerHistoryRepository answerHistoryRepository
+        +execute(AnswerQuestionCommand command) AnswerQuestionResult
+    }
+
+    class AnswerQuestionCommand {
+        -int userId
+        -int categoryId
+        -int questionId
+        -int selectedChoiceId
+    }
+
+    class AnswerQuestionResult {
+        -boolean correct
+        -String message
+        -String explanation
+    }
+
+    class CategoryRepository {
+        <<interface>>
+        +findRootCategories() List~Category~
+        +findChildren(int parentId) List~Category~
+    }
+
+    class QuestionRepository {
+        <<interface>>
+        +findByCategoryId(int categoryId) List~Question~
+    }
+
+    class ChoiceRepository {
+        <<interface>>
+        +findByQuestionId(int questionId) List~Choice~
+        +findById(int choiceId) Choice
+    }
+
+    class AnswerHistoryRepository {
+        <<interface>>
+        +save(AnswerHistory history) void
+    }
+}
+
+namespace Infrastructure {
+    class AnswerQuestionController {
+        -AnswerQuestionUseCase answerQuestionUseCase
+        -ConsoleView consoleView
+        +answer() void
+    }
+
+    class ConsoleView {
+        +showCategories(List~Category~ categories) void
+        +selectCategory() int
+        +showQuestion(Question question, List~Choice~ choices) void
+        +selectChoice() int
+        +showAnswerResult(AnswerQuestionResult result) void
+    }
+
+    class JdbcCategoryRepository
+    class JdbcQuestionRepository
+    class JdbcChoiceRepository
+    class JdbcAnswerHistoryRepository
+}
+
+AnswerQuestionUseCase <|.. AnswerQuestionService
+CategoryRepository <|.. JdbcCategoryRepository
+QuestionRepository <|.. JdbcQuestionRepository
+ChoiceRepository <|.. JdbcChoiceRepository
+AnswerHistoryRepository <|.. JdbcAnswerHistoryRepository
+
+AnswerQuestionController o-- AnswerQuestionUseCase
+AnswerQuestionController o-- ConsoleView
+
+AnswerQuestionService o-- CategoryRepository
+AnswerQuestionService o-- QuestionRepository
+AnswerQuestionService o-- ChoiceRepository
+AnswerQuestionService o-- AnswerHistoryRepository
+AnswerQuestionService o-- AnswerJudge
+
+Category o-- Category
+Category o-- Question
+Question o-- Choice
+AnswerHistory o-- Question
+AnswerHistory o-- Choice
+
+AnswerQuestionService ..> AnswerQuestionCommand
+AnswerQuestionService ..> AnswerQuestionResult
+AnswerQuestionService ..> AnswerHistory
+ConsoleView ..> Category
+ConsoleView ..> Question
+ConsoleView ..> Choice
